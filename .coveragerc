@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = aeromancer
+omit = aeromancer/tests/*,aeromancer/openstack/*
+
+[report]
+ignore-errors = True
