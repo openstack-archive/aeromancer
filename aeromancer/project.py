@@ -23,7 +23,7 @@ def add_or_update(session, name, path):
         LOG.info('adding project %s from %s', name, path)
         session.add(proj_obj)
 
-    update_project_files(session, proj_obj)
+    update(session, proj_obj)
     return proj_obj
 
 
@@ -38,7 +38,11 @@ def remove(session, name):
     session.delete(proj_obj)
 
 
-def update_project_files(session, proj_obj):
+def update(session, proj_obj):
+    _update_project_files(session, proj_obj)
+
+
+def _update_project_files(session, proj_obj):
     """Update the files stored for each project"""
     # Delete any existing files in case the list of files being
     # managed has changed. This naive, and we can do better, but as a
@@ -63,5 +67,5 @@ def update_project_files(session, proj_obj):
         with io.open(fullname, mode='r', encoding='utf-8') as f:
             body = f.read()
             lines = body.splitlines()
-            LOG.info('%s has %s lines', filename, len(lines))
+            LOG.info('%s/%s has %s lines', proj_obj.name, filename, len(lines))
         session.add(File(project=proj_obj, name=filename, path=fullname))

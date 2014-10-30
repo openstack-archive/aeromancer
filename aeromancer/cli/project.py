@@ -29,17 +29,32 @@ class Add(Command):
         for project_name in parsed_args.project:
             project_path = os.path.join(self.app.options.repo_root, project_name)
             proj_obj = project.add_or_update(session, project_name, project_path)
-        session.commit()
+            session.commit()
 
 
 class List(Lister):
     """Show the registered projects"""
+
+    log = logging.getLogger(__name__)
 
     def take_action(self, parsed_args):
         session = self.app.get_db_session()
         query = session.query(Project).order_by(Project.name)
         return (('Name', 'Path'),
                 ((p.name, p.path) for p in query.all()))
+
+
+class Rescan(Command):
+    "Rescan all known projects"
+
+    log = logging.getLogger(__name__)
+
+    def take_action(self, parsed_args):
+        session = self.app.get_db_session()
+        query = session.query(Project).order_by(Project.name)
+        for proj_obj in query.all():
+            project.update(session, proj_obj)
+            session.commit()
 
 
 class Remove(Command):
