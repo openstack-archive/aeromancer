@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 
 from cliff.app import App
@@ -21,6 +22,23 @@ class Aeromancer(App):
             version=dist.version,
             command_manager=CommandManager('aeromancer.cli'),
         )
+
+    def build_option_parser(self, description, version,
+                            argparse_kwargs=None):
+        parser = super(Aeromancer, self).build_option_parser(
+            description,
+            version,
+            argparse_kwargs,
+        )
+        default_repo_root = os.environ.get('AEROMANCER_REPOS', '~/repos')
+        parser.add_argument(
+            '--repo-root',
+            default=os.path.expanduser(default_repo_root),
+            help=('directory where repositories are checked out; '
+                  'set with AEROMANCER_REPOS environment variable; '
+                  'defaults to %(default)s'),
+        )
+        return parser
 
     def configure_logging(self):
         super(Aeromancer, self).configure_logging()
