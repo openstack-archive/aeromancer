@@ -18,7 +18,7 @@ def upgrade():
     op.create_table(
         'project',
         sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('name', sa.String(), nullable=False),
+        sa.Column('name', sa.String(), nullable=False, unique=True),
         sa.Column('path', sa.String()),
     )
 

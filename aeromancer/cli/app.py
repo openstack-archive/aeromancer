@@ -5,8 +5,9 @@ import sys
 from cliff.app import App
 from cliff.commandmanager import CommandManager
 import pkg_resources
+from sqlalchemy.orm import sessionmaker
 
-from aeromancer.db import migrations
+from aeromancer.db import connect, migrations
 
 
 class Aeromancer(App):
@@ -51,7 +52,11 @@ class Aeromancer(App):
     def initialize_app(self, argv):
         self.log.debug('updating database')
         migrations.run_migrations()
+        self.engine = connect.connect()
+        self._session_maker = sessionmaker(bind=self.engine)
 
+    def get_db_session(self):
+        return self._session_maker()
 
     # def prepare_to_run_command(self, cmd):
     #     self.log.debug('prepare_to_run_command %s', cmd.__class__.__name__)
