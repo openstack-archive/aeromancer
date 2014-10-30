@@ -5,7 +5,7 @@ import logging
 import os
 import subprocess
 
-from aeromancer.db.models import Project, File
+from aeromancer.db.models import Project, File, Line
 from aeromancer import utils
 
 from sqlalchemy.orm.exc import NoResultFound
@@ -72,6 +72,8 @@ def _update_project_files(session, proj_obj):
         fullname = os.path.join(proj_obj.path, filename)
         if not os.path.isfile(fullname):
             continue
+        new_file = File(project=proj_obj, name=filename, path=fullname)
+        session.add(new_file)
         with io.open(fullname, mode='r', encoding='utf-8') as f:
             try:
                 body = f.read()
@@ -83,7 +85,8 @@ def _update_project_files(session, proj_obj):
                 continue
             lines = body.splitlines()
             LOG.info('%s/%s has %s lines', proj_obj.name, filename, len(lines))
-        session.add(File(project=proj_obj, name=filename, path=fullname))
+            for num, content in enumerate(lines, 1):
+                session.add(Line(file=new_file, number=num, content=content))
 
 
 def discover(repo_root):

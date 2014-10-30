@@ -10,6 +10,9 @@ class Project(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True, nullable=False)
     path = Column(String)
+    files = relationship('File',
+                         backref='project',
+                         cascade="all, delete, delete-orphan")
 
 
 class File(Base):
@@ -18,5 +21,14 @@ class File(Base):
     project_id = Column(Integer, ForeignKey('project.id'))
     name = Column(String, nullable=False)
     path = Column(String)
+    lines = relationship('Line',
+                         backref='file',
+                         cascade="all, delete, delete-orphan")
 
-    project = relationship("Project", backref=backref('files', order_by=name))
+
+class Line(Base):
+    __tablename__ = 'line'
+    id = Column(Integer, primary_key=True)
+    file_id = Column(Integer, ForeignKey('file.id'))
+    number = Column(Integer, nullable=False)
+    content = Column(String)
