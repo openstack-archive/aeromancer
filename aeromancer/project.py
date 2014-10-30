@@ -1,3 +1,4 @@
+import fnmatch
 import glob
 import io
 import itertools
@@ -57,8 +58,19 @@ def _find_files_in_project(path):
         return output.split('\0')
 
 
+_DO_NOT_READ = [
+    '*.png',
+    '*.gif',
+    '*.jpg',
+    '*.jpeg',
+    '*.jar',  # Why do we check in jar files?!
+    '*.xml',
+]
+
+
 def _update_project_files(session, proj_obj):
     """Update the files stored for each project"""
+    LOG.info('reading file contents in %s', proj_obj.name)
     # Delete any existing files in case the list of files being
     # managed has changed. This naive, and we can do better, but as a
     # first version it's OK.
@@ -74,6 +86,9 @@ def _update_project_files(session, proj_obj):
             continue
         new_file = File(project=proj_obj, name=filename, path=fullname)
         session.add(new_file)
+        if any(fnmatch.fnmatch(filename, dnr) for dnr in _DO_NOT_READ):
+            LOG.debug('ignoring contents of %s', fullname)
+            continue
         with io.open(fullname, mode='r', encoding='utf-8') as f:
             try:
                 body = f.read()
@@ -84,7 +99,7 @@ def _update_project_files(session, proj_obj):
                          fullname)
                 continue
             lines = body.splitlines()
-            LOG.info('%s/%s has %s lines', proj_obj.name, filename, len(lines))
+            LOG.debug('%s/%s has %s lines', proj_obj.name, filename, len(lines))
             for num, content in enumerate(lines, 1):
                 session.add(Line(file=new_file, number=num, content=content))
 
