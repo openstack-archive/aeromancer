@@ -1,9 +1,12 @@
+import glob
 import io
+import itertools
 import logging
 import os
 import subprocess
 
 from aeromancer.db.models import Project, File
+from aeromancer import utils
 
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -42,6 +45,18 @@ def update(session, proj_obj):
     _update_project_files(session, proj_obj)
 
 
+def _find_files_in_project(path):
+    """Return a list of the files managed in the project.
+
+    Uses 'git ls-files'
+    """
+    with utils.working_dir(path):
+        cmd = subprocess.Popen(['git', 'ls-files', '-z'],
+                               stdout=subprocess.PIPE)
+        output = cmd.communicate()[0]
+        return output.split('\0')
+
+
 def _update_project_files(session, proj_obj):
     """Update the files stored for each project"""
     # Delete any existing files in case the list of files being
@@ -50,22 +65,31 @@ def _update_project_files(session, proj_obj):
     for file_obj in proj_obj.files:
         session.delete(file_obj)
 
+    # FIXME(dhellmann): Concurrency?
+
     # Now load the files currently being managed by git.
-    before = os.getcwd()
-    os.chdir(proj_obj.path)
-    try:
-        cmd = subprocess.Popen(['git', 'ls-files', '-z'],
-                               stdout=subprocess.PIPE)
-        output = cmd.communicate()[0]
-        filenames = output.split('\0')
-    finally:
-        os.chdir(before)
-    for filename in filenames:
+    for filename in _find_files_in_project(proj_obj.path):
         fullname = os.path.join(proj_obj.path, filename)
         if not os.path.isfile(fullname):
             continue
         with io.open(fullname, mode='r', encoding='utf-8') as f:
-            body = f.read()
+            try:
+                body = f.read()
+            except UnicodeDecodeError:
+                # FIXME(dhellmann): Be smarter about trying other
+                # encodings?
+                LOG.warn('Could not read %s as a UTF-8 encoded file, ignoring',
+                         fullname)
+                continue
             lines = body.splitlines()
             LOG.info('%s/%s has %s lines', proj_obj.name, filename, len(lines))
         session.add(File(project=proj_obj, name=filename, path=fullname))
+
+
+def discover(repo_root):
+    """Discover project-like directories under the repository root"""
+    with utils.working_dir(repo_root):
+        return itertools.chain(
+            glob.glob('openstack*/*'),
+            glob.glob('stackforge/*'),
+        )

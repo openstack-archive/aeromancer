@@ -3,6 +3,7 @@ import os
 
 from aeromancer.db.models import *
 from aeromancer import project
+from aeromancer import utils
 
 from cliff.command import Command
 from cliff.lister import Lister
@@ -54,6 +55,20 @@ class Rescan(Command):
         query = session.query(Project).order_by(Project.name)
         for proj_obj in query.all():
             project.update(session, proj_obj)
+            session.commit()
+
+
+class Discover(Command):
+    "Find all projects in the repository root"
+
+    log = logging.getLogger(__name__)
+
+    def take_action(self, parsed_args):
+        session = self.app.get_db_session()
+        for project_name in project.discover(self.app.options.repo_root):
+            full_path = os.path.join(self.app.options.repo_root,
+                                     project_name)
+            project.add_or_update(session, project_name, full_path)
             session.commit()
 
 
