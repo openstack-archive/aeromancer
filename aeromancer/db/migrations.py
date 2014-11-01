@@ -17,6 +17,8 @@ def run_migrations():
     url = connect.get_url()
     config.set_main_option("sqlalchemy.url", url)
     command.upgrade(config, 'head')
+    # NOTE(dhellmann): Load migration settings from the plugins for
+    # processing special types of files, and run them.
 
 
 if __name__ == '__main__':

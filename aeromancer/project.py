@@ -103,6 +103,10 @@ def _update_project_files(session, proj_obj):
             for num, content in enumerate(lines, 1):
                 session.add(Line(file=new_file, number=num, content=content))
 
+        # NOTE(dhellmann): Use stevedore to invoke plugins based on
+        # fnmatch of filename being read (use the filename, not the
+        # fullname.
+
 
 def discover(repo_root):
     """Discover project-like directories under the repository root"""
