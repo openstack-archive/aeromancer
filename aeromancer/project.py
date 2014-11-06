@@ -72,13 +72,29 @@ def _find_files_in_project(path):
 
 
 _DO_NOT_READ = [
-    '*.png',
-    '*.gif',
-    '*.jpg',
-    '*.jpeg',
-    '*.jar',  # Why do we check in jar files?!
-    '*.xml',
+    '*.doc',
+    '*.docx',
+    '*.graffle',
     '*.odp',
+    '*.pptx',
+    '*.vsd',
+
+    '*.gif',
+    '*.ico',
+    '*.jpeg',
+    '*.jpg',
+    '*.png',
+    '*.ttf',
+
+    '*.gpg',
+
+    '*.jar',  # Why do we check in jar files?!
+
+    '*.woff',  # webfont; horizon
+
+    '*.xml',
+
+    '*.zip',
 ]
 
 
