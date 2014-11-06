@@ -25,6 +25,10 @@ class File(Base):
                          backref='file',
                          cascade="all, delete, delete-orphan")
 
+    @property
+    def project_path(self):
+        return '%s/%s' % (self.project.name, self.name)
+
 
 class Line(Base):
     __tablename__ = 'line'

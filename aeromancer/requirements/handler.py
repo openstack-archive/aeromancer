@@ -13,13 +13,14 @@ class RequirementsHandler(base.FileHandler):
     INTERESTING_PATTERNS = ['*requirements*.txt']
 
     def process_file(self, session, file_obj):
-        LOG.info('loading requirements from %s', file_obj.path)
+        LOG.info('loading requirements from %s', file_obj.project_path)
         parent_project = file_obj.project
         for line in file_obj.lines:
             text = line.content.strip()
             if not text or text.startswith('#'):
                 continue
             try:
+                # FIXME(dhellmann): Use pbr's requirements parser.
                 dist_name = pkg_resources.Requirement.parse(text).project_name
             except ValueError:
                 LOG.warn('could not parse dist name from %r',
