@@ -29,8 +29,9 @@ class List(Lister):
             models.Project.name == parsed_args.project
         )
         proj_obj = query.one()
-        return (('Name', 'Spec'),
-                ((r.name, r.line.content.strip()) for r in proj_obj.requirements))
+        return (('Name', 'Spec', 'File'),
+                ((r.name, r.line.content.strip(), r.line.file.name)
+                 for r in proj_obj.requirements))
 
 
 class Uses(Lister):
