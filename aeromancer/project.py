@@ -78,6 +78,7 @@ _DO_NOT_READ = [
     '*.jpeg',
     '*.jar',  # Why do we check in jar files?!
     '*.xml',
+    '*.odp',
 ]
 
 
