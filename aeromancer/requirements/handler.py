@@ -25,7 +25,7 @@ class RequirementsHandler(base.FileHandler):
                 LOG.warn('could not parse dist name from %r',
                          line.content)
                 continue
-            LOG.info('requirement: %s', dist_name)
+            LOG.debug('requirement: %s', dist_name)
             new_r = models.Requirement(
                 name=dist_name,
                 line=line,
