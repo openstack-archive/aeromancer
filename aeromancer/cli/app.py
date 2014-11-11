@@ -50,6 +50,11 @@ class Aeromancer(App):
         return
 
     def initialize_app(self, argv):
+        # Make sure our application directory exists, so we have a
+        # place to put the database and any other configuration files.
+        self.app_dir = os.path.expanduser('~/.aeromancer')
+        if not os.path.exists(self.app_dir):
+            os.mkdir(self.app_dir)
         self.log.debug('updating database')
         migrations.run_migrations()
         self.engine = connect.connect()
