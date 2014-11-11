@@ -27,9 +27,10 @@ class Add(Command):
 
     def take_action(self, parsed_args):
         session = self.app.get_db_session()
+        pm = project.ProjectManager(session)
         for project_name in parsed_args.project:
             project_path = os.path.join(self.app.options.repo_root, project_name)
-            proj_obj = project.add_or_update(session, project_name, project_path)
+            pm.add_or_update(project_name, project_path)
             session.commit()
 
 
@@ -65,10 +66,11 @@ class Discover(Command):
 
     def take_action(self, parsed_args):
         session = self.app.get_db_session()
+        pm = project.ProjectManager(session)
         for project_name in project.discover(self.app.options.repo_root):
             full_path = os.path.join(self.app.options.repo_root,
                                      project_name)
-            project.add_or_update(session, project_name, full_path)
+            pm.add_or_update(project_name, full_path)
             session.commit()
 
 
@@ -90,6 +92,7 @@ class Remove(Command):
 
     def take_action(self, parsed_args):
         session = self.app.get_db_session()
+        pm = project.ProjectManager(session)
         for project_name in parsed_args.project:
-            project.remove(session, project_name)
-        session.commit()
+            pm.remove(project_name)
+            session.commit()
