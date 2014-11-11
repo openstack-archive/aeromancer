@@ -146,7 +146,7 @@ def discover(repo_root):
     """Discover project-like directories under the repository root"""
     with utils.working_dir(repo_root):
         return itertools.ifilter(
-            os.path.isdir,
+            lambda x: os.path.isdir(os.path.join(repo_root, x)),
             itertools.chain(
                 glob.glob('openstack*/*'),
                 glob.glob('stackforge/*'),
