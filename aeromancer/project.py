@@ -40,7 +40,7 @@ def _find_files_in_project(path):
 class ProjectManager(object):
 
     _DO_NOT_READ = [
-        '*.doc', '*.docx', '*.graffle', '*.odp', '*.pptx', '*.vsd',
+        '*.doc', '*.docx', '*.graffle', '*.odp', '*.pptx', '*.vsd', '*.xsd',
         '*.gif', '*.ico', '*.jpeg', '*.jpg', '*.png', '*.ttf',
         '*.gpg',
         '*.jar',  # Why do we check in jar files?!
