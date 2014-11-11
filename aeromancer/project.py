@@ -145,7 +145,10 @@ def _update_project_files(session, proj_obj):
 def discover(repo_root):
     """Discover project-like directories under the repository root"""
     with utils.working_dir(repo_root):
-        return itertools.chain(
-            glob.glob('openstack*/*'),
-            glob.glob('stackforge/*'),
+        return itertools.ifilter(
+            os.path.isdir,
+            itertools.chain(
+                glob.glob('openstack*/*'),
+                glob.glob('stackforge/*'),
+            )
         )
