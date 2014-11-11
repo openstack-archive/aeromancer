@@ -90,11 +90,15 @@ _DO_NOT_READ = [
 
     '*.jar',  # Why do we check in jar files?!
 
+    '*.swf',
+    '*.eot',
     '*.woff',  # webfont; horizon
 
     '*.xml',
 
+    '*.gz',
     '*.zip',
+    '*.z',
 ]
 
 
