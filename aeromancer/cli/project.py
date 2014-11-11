@@ -64,10 +64,24 @@ class Discover(Command):
 
     log = logging.getLogger(__name__)
 
+    def get_parser(self, prog_name):
+        parser = super(Discover, self).get_parser(prog_name)
+        parser.add_argument(
+            '--organization', '--org', '-o',
+            action='append',
+            default=[],
+            help=('organization directory names under the project root, '
+                  'for example: "stackforge", defaults to "openstack"'),
+        )
+        return parser
+
     def take_action(self, parsed_args):
         session = self.app.get_db_session()
         pm = project.ProjectManager(session)
-        for project_name in project.discover(self.app.options.repo_root):
+        orgs = parsed_args.organization
+        if not orgs:
+            orgs = ['openstack']
+        for project_name in project.discover(self.app.options.repo_root, orgs):
             full_path = os.path.join(self.app.options.repo_root,
                                      project_name)
             pm.add_or_update(project_name, full_path)

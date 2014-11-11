@@ -16,15 +16,13 @@ from aeromancer import utils
 LOG = logging.getLogger(__name__)
 
 
-def discover(repo_root):
+def discover(repo_root, organizations):
     """Discover project-like directories under the repository root"""
+    glob_patterns = ['%s/*' % o for o in organizations]
     with utils.working_dir(repo_root):
         return itertools.ifilter(
             lambda x: os.path.isdir(os.path.join(repo_root, x)),
-            itertools.chain(
-                glob.glob('openstack*/*'),
-                glob.glob('stackforge/*'),
-            )
+            itertools.chain(*(glob.glob(g) for g in glob_patterns))
         )
 
 def _find_files_in_project(path):
