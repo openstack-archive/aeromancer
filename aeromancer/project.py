@@ -108,8 +108,9 @@ class ProjectManager(object):
         # managed has changed. This naive, and we can do better, but as a
         # first version it's OK.
         self._delete_filehandler_data_from_project(proj_obj)
-        for file_obj in proj_obj.files:
-            self.session.delete(file_obj)
+        LOG.debug('deleting files from project %s', proj_obj.name)
+        query = self.session.query(File).filter(File.project_id == proj_obj.id)
+        query.delete()
 
         # Now load the files currently being managed by git.
         for filename in _find_files_in_project(proj_obj.path):
