@@ -12,7 +12,6 @@ class Module(models.Base):
     line = relationship(
         models.Line,
         uselist=False,
-        single_parent=True,
     )
     project_id = Column(Integer, ForeignKey('project.id'))
     project = relationship(
