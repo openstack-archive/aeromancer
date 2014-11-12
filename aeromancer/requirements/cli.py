@@ -8,6 +8,8 @@ from aeromancer import utils
 
 from cliff.lister import Lister
 
+from sqlalchemy import distinct
+
 
 class List(Lister):
     """List the requirements for a project"""
@@ -53,3 +55,18 @@ class Uses(Lister):
         ).order_by(models.Project.name)
         return (('Name', 'Spec', 'File'),
                 ((r.project.name, r.line.content.strip(), r.line.file.name) for r in query.all()))
+
+
+class Unused(Lister):
+    """List global requirements not used by any projects"""
+
+    log = logging.getLogger(__name__)
+
+    def take_action(self, parsed_args):
+        session = self.app.get_db_session()
+        used_requirements = session.query(distinct(req_models.Requirement.name))
+        query = session.query(req_models.GlobalRequirement).filter(
+            req_models.GlobalRequirement.name.notin_(used_requirements)
+        ).order_by(req_models.GlobalRequirement.name)
+        return (('Name', 'Spec'),
+                ((r.name, r.line.content.strip()) for r in query.all()))
