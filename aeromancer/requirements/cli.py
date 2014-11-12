@@ -9,6 +9,7 @@ from aeromancer import utils
 from cliff.lister import Lister
 
 from sqlalchemy import distinct
+from sqlalchemy.orm import aliased
 
 
 class List(Lister):
@@ -70,3 +71,29 @@ class Unused(Lister):
         ).order_by(req_models.GlobalRequirement.name)
         return (('Name', 'Spec'),
                 ((r.name, r.line.content.strip()) for r in query.all()))
+
+
+class Outdated(Lister):
+    """List requirements in projects that do not match the global spec"""
+
+    log = logging.getLogger(__name__)
+
+    def take_action(self, parsed_args):
+        session = self.app.get_db_session()
+        used_requirements = session.query(distinct(req_models.Requirement.name))
+        global_line = aliased(models.Line)
+        project_line = aliased(models.Line)
+        query = session.query(req_models.Requirement,
+                              models.Project,
+                              global_line,
+                              project_line,
+                              req_models.GlobalRequirement).filter(
+                                  req_models.Requirement.project_id == models.Project.id,
+                                  req_models.Requirement.name == req_models.GlobalRequirement.name,
+                                  project_line.id == req_models.Requirement.line_id,
+                                  global_line.id == req_models.GlobalRequirement.line_id,
+                                  project_line.content != global_line.content,
+                              ).order_by(models.Project.name, req_models.Requirement.name)
+        return (('Project', 'Local', 'Global'),
+                ((r[1].name, r[3].content.strip(), r[2].content.strip())
+                 for r in query.all()))
