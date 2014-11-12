@@ -41,13 +41,14 @@ class ProjectManager(object):
 
     _DO_NOT_READ = [
         '*.doc', '*.docx', '*.graffle', '*.odp', '*.pptx', '*.vsd', '*.xsd',
-        '*.gif', '*.ico', '*.jpeg', '*.jpg', '*.png', '*.ttf',
+        '*.gif', '*.ico', '*.jpeg', '*.jpg', '*.png', '*.tiff',
         '*.gpg',
         '*.jar',  # Why do we check in jar files?!
         '*.swf', '*.eot',
-        '*.woff',  # webfont; horizon
+        '*.ttf', '*.woff',  # webfont; horizon
         '*.xml',
         '*.gz', '*.zip', '*.z',
+        '*.mo', '*.db',
     ]
 
     def __init__(self, session):
