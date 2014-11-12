@@ -54,5 +54,5 @@ class Uses(Lister):
         query = session.query(oslo_models.Module).join(models.Project).filter(
             oslo_models.Module.name == parsed_args.module
         ).order_by(models.Project.name)
-        return (('Name',),
+        return (('Project',),
                 ((r.project.name,) for r in query.all()))
