@@ -25,13 +25,12 @@ class List(Lister):
 
     def take_action(self, parsed_args):
         session = self.app.get_db_session()
-        query = session.query(models.Project).filter(
+        query = session.query(req_models.Requirement).join(models.Project).filter(
             models.Project.name == parsed_args.project
-        )
-        proj_obj = query.one()
+        ).order_by(req_models.Requirement.name)
         return (('Name', 'Spec', 'File'),
                 ((r.name, r.line.content.strip(), r.line.file.name)
-                 for r in proj_obj.requirements))
+                 for r in query.all()))
 
 
 class Uses(Lister):
@@ -49,8 +48,8 @@ class Uses(Lister):
 
     def take_action(self, parsed_args):
         session = self.app.get_db_session()
-        query = session.query(req_models.Requirement).filter(
+        query = session.query(req_models.Requirement).join(models.Project).filter(
             req_models.Requirement.name == parsed_args.requirement
-        )
+        ).order_by(models.Project.name)
         return (('Name', 'Spec', 'File'),
                 ((r.project.name, r.line.content.strip(), r.line.file.name) for r in query.all()))
