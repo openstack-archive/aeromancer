@@ -26,15 +26,23 @@ def discover(repo_root, organizations):
         )
 
 def _find_files_in_project(path):
-    """Return a list of the files managed in the project.
+    """Return a list of the files managed in the project and their sha hash.
 
-    Uses 'git ls-files'
+    Uses 'git ls-files -s'
     """
     with utils.working_dir(path):
-        cmd = subprocess.Popen(['git', 'ls-files', '-z'],
+        # Ask git to tell us the sha hash so we can tell if the file
+        # has changed since we looked at it last.
+        cmd = subprocess.Popen(['git', 'ls-files', '-z', '-s'],
                                stdout=subprocess.PIPE)
         output = cmd.communicate()[0]
-        return output.split('\0')
+        entries = output.split('\0')
+        for e in entries:
+            if not e:
+                continue
+            metadata, ignore, filename = e.partition('\t')
+            sha = metadata.split(' ')[1]
+            yield (filename, sha)
 
 
 class ProjectManager(object):
@@ -104,6 +112,13 @@ class ProjectManager(object):
     def _update_project_files(self, proj_obj):
         """Update the files stored for each project"""
         LOG.debug('reading file contents in %s', proj_obj.name)
+
+        # FIXME: Need to be smarter about updating files here. We have
+        # the full file contents, so we could compute a hash to see if
+        # the file has changed. Then we only have to delete data for
+        # the files that have changed, and re-read those, rather than
+        # reloading all of the files.
+
         # Delete any existing files in case the list of files being
         # managed has changed. This naive, and we can do better, but as a
         # first version it's OK.
@@ -113,11 +128,11 @@ class ProjectManager(object):
         query.delete()
 
         # Now load the files currently being managed by git.
-        for filename in _find_files_in_project(proj_obj.path):
+        for filename, sha in _find_files_in_project(proj_obj.path):
             fullname = os.path.join(proj_obj.path, filename)
             if not os.path.isfile(fullname):
                 continue
-            new_file = File(project=proj_obj, name=filename, path=fullname)
+            new_file = File(project=proj_obj, name=filename, path=fullname, sha=sha)
             self.session.add(new_file)
             if any(fnmatch.fnmatch(filename, dnr) for dnr in self._DO_NOT_READ):
                 LOG.debug('ignoring contents of %s', fullname)

@@ -21,6 +21,7 @@ class File(Base):
     project_id = Column(Integer, ForeignKey('project.id'))
     name = Column(String, nullable=False)
     path = Column(String)
+    sha = Column(String)
     lines = relationship('Line',
                          backref='file',
                          cascade="all, delete, delete-orphan")
