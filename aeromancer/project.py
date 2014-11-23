@@ -63,16 +63,6 @@ class ProjectManager(object):
         self.file_handlers = filehandler.load_handlers()
         self.session = session
 
-    def _delete_filehandler_data_from_project(self, proj_obj):
-        # We have to explicitly have the handlers delete their data
-        # because the parent-child relationship of the tables is reversed
-        # because the plugins define the relationships.
-        LOG.debug('deleting plugin data for %s', proj_obj.name)
-        for file_obj in proj_obj.files:
-            for fh in self.file_handlers:
-                if fh.obj.supports_file(file_obj):
-                    fh.obj.delete_data_for_file(self.session, file_obj)
-
     def get_project(self, name):
         """Return an existing project, if there is one"""
         query = self.session.query(Project).filter(Project.name == name)
@@ -81,7 +71,7 @@ class ProjectManager(object):
         except NoResultFound:
             return None
 
-    def add_or_update(self, name, path):
+    def add_or_update(self, name, path, force=False):
         """Create a new project definition or update an existing one"""
         proj_obj = self.get_project(name)
         if proj_obj:
@@ -91,12 +81,12 @@ class ProjectManager(object):
             proj_obj = Project(name=name, path=path)
             LOG.info('adding project %s from %s', name, path)
             self.session.add(proj_obj)
-        self.update(proj_obj)
+        self.update(proj_obj, force=force)
         return proj_obj
 
-    def update(self, proj_obj):
+    def update(self, proj_obj, force=False):
         """Update the settings for an existing project"""
-        self._update_project_files(proj_obj)
+        self._update_project_files(proj_obj, force=force)
 
     def remove(self, name):
         """Delete stored data for the named project"""
@@ -109,29 +99,54 @@ class ProjectManager(object):
         self._delete_filehandler_data_from_project(proj_obj)
         self.session.delete(proj_obj)
 
-    def _update_project_files(self, proj_obj):
+    def _remove_filehandler_data_for_file(self, file_obj):
+        # We have to explicitly have the handlers delete their data
+        # because the parent-child relationship of the tables is reversed
+        # because the plugins define the relationships.
+        LOG.debug('removing plugin data for %s', file_obj.name)
+        for fh in self.file_handlers:
+            if fh.obj.supports_file(file_obj):
+                fh.obj.delete_data_for_file(self.session, file_obj)
+
+    def _remove_file_data(self, file_obj, reason='file has changed'):
+        """Delete the data associated with the file, including plugin data and
+        file contents.
+
+        """
+        LOG.debug('removing cached contents of %s: %s', file_obj.name, reason)
+        self._remove_filehandler_data_for_file(file_obj)
+        self.session.delete(file_obj)
+
+    def _update_project_files(self, proj_obj, force):
         """Update the files stored for each project"""
         LOG.debug('reading file contents in %s', proj_obj.name)
 
-        # FIXME: Need to be smarter about updating files here. We have
-        # the full file contents, so we could compute a hash to see if
-        # the file has changed. Then we only have to delete data for
-        # the files that have changed, and re-read those, rather than
-        # reloading all of the files.
+        # Collect the known files in a project so we can test their
+        # SHAs quickly.
+        known = {f.name: f for f in proj_obj.files}
 
-        # Delete any existing files in case the list of files being
-        # managed has changed. This naive, and we can do better, but as a
-        # first version it's OK.
-        self._delete_filehandler_data_from_project(proj_obj)
-        LOG.debug('deleting files from project %s', proj_obj.name)
-        query = self.session.query(File).filter(File.project_id == proj_obj.id)
-        query.delete()
+        # Track the files we've seen so we can delete any files that
+        # are no longer present.
+        seen = set()
 
         # Now load the files currently being managed by git.
         for filename, sha in _find_files_in_project(proj_obj.path):
+            # Remember that we have seen the file in the project.
+            seen.add(filename)
+            # Skip things that are not files (usually symlinks).
             fullname = os.path.join(proj_obj.path, filename)
             if not os.path.isfile(fullname):
                 continue
+            try:
+                existing_file = known[filename]
+                if existing_file.sha == sha and not force:
+                    # File has not changed, we can use the content we
+                    # already have.
+                    LOG.debug('using cached version of %s', filename)
+                    continue
+                self._remove_file_data(existing_file)
+            except KeyError:
+                pass
             new_file = File(project=proj_obj, name=filename, path=fullname, sha=sha)
             self.session.add(new_file)
             if any(fnmatch.fnmatch(filename, dnr) for dnr in self._DO_NOT_READ):
@@ -155,3 +170,11 @@ class ProjectManager(object):
             for fh in self.file_handlers:
                 if fh.obj.supports_file(new_file):
                     fh.obj.process_file(self.session, new_file)
+
+            self.session.flush()
+
+        # Remove files that we have in the database but that were no
+        # longer seen in the git repository.
+        for name, obj in known.items():
+            if name not in seen:
+                self._remove_file_data(obj, reason='file no longer exists')

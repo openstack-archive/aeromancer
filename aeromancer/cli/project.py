@@ -17,6 +17,12 @@ class Add(Command):
     def get_parser(self, prog_name):
         parser = super(Add, self).get_parser(prog_name)
         parser.add_argument(
+            '--force',
+            action='store_true',
+            default=False,
+            help='force re-reading the project files',
+        )
+        parser.add_argument(
             'project',
             nargs='+',
             default=[],
@@ -29,8 +35,10 @@ class Add(Command):
         session = self.app.get_db_session()
         pm = project.ProjectManager(session)
         for project_name in parsed_args.project:
-            project_path = os.path.join(self.app.options.repo_root, project_name)
-            pm.add_or_update(project_name, project_path)
+            project_path = os.path.join(self.app.options.repo_root,
+                                        project_name)
+            pm.add_or_update(project_name, project_path,
+                             force=parsed_args.force)
             session.commit()
 
 
@@ -51,11 +59,22 @@ class Rescan(Command):
 
     log = logging.getLogger(__name__)
 
+    def get_parser(self, prog_name):
+        parser = super(Rescan, self).get_parser(prog_name)
+        parser.add_argument(
+            '--force',
+            action='store_true',
+            default=False,
+            help='force re-reading the project files',
+        )
+        return parser
+
     def take_action(self, parsed_args):
         session = self.app.get_db_session()
         query = session.query(Project).order_by(Project.name)
+        pm = project.ProjectManager(session)
         for proj_obj in query.all():
-            project.update(session, proj_obj)
+            pm.update(proj_obj, force=parsed_args.force)
             session.commit()
 
 
