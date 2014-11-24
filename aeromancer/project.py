@@ -99,22 +99,20 @@ class ProjectManager(object):
         self._delete_filehandler_data_from_project(proj_obj)
         self.session.delete(proj_obj)
 
-    def _remove_filehandler_data_for_file(self, file_obj):
-        # We have to explicitly have the handlers delete their data
-        # because the parent-child relationship of the tables is reversed
-        # because the plugins define the relationships.
-        LOG.debug('removing plugin data for %s', file_obj.name)
-        for fh in self.file_handlers:
-            if fh.obj.supports_file(file_obj):
-                fh.obj.delete_data_for_file(self.session, file_obj)
-
     def _remove_file_data(self, file_obj, reason='file has changed'):
         """Delete the data associated with the file, including plugin data and
         file contents.
 
         """
         LOG.debug('removing cached contents of %s: %s', file_obj.name, reason)
-        self._remove_filehandler_data_for_file(file_obj)
+        # We have to explicitly have the handlers delete their data
+        # because the parent-child relationship of the tables is reversed
+        # because the plugins define the relationships.
+        for fh in self.file_handlers:
+            if fh.obj.supports_file(file_obj):
+                LOG.debug('removing %s plugin data for %s', fh.name, file_obj.name)
+                fh.obj.delete_data_for_file(self.session, file_obj)
+        self.session.query(Line).filter(Line.file_id == file_obj.id).delete()
         self.session.delete(file_obj)
 
     def _update_project_files(self, proj_obj, force):
@@ -152,6 +150,7 @@ class ProjectManager(object):
             if any(fnmatch.fnmatch(filename, dnr) for dnr in self._DO_NOT_READ):
                 LOG.debug('ignoring contents of %s', fullname)
             else:
+                LOG.debug('reading %s', fullname)
                 with io.open(fullname, mode='r', encoding='utf-8') as f:
                     try:
                         body = f.read()
@@ -162,9 +161,16 @@ class ProjectManager(object):
                                  fullname)
                         continue
                     lines = body.splitlines()
+                    # Use SQLalchemy's core mode to bulk insert the lines.
+                    if lines:
+                        self.session.execute(
+                            Line.__table__.insert(),
+                            [{'file_id': new_file.id,
+                              'number': num,
+                              'content': content}
+                             for num, content in enumerate(lines, 1)]
+                        )
                     LOG.debug('%s/%s has %s lines', proj_obj.name, filename, len(lines))
-                    for num, content in enumerate(lines, 1):
-                        self.session.add(Line(file=new_file, number=num, content=content))
 
             # Invoke plugins for processing files in special ways
             for fh in self.file_handlers:
@@ -178,3 +184,4 @@ class ProjectManager(object):
         for name, obj in known.items():
             if name not in seen:
                 self._remove_file_data(obj, reason='file no longer exists')
+                self.session.flush()
