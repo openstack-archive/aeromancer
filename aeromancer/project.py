@@ -49,7 +49,7 @@ class ProjectManager(object):
 
     _DO_NOT_READ = [
         '*.doc', '*.docx', '*.graffle', '*.odp', '*.pptx', '*.vsd', '*.xsd',
-        '*.gif', '*.ico', '*.jpeg', '*.jpg', '*.png', '*.tiff',
+        '*.gif', '*.ico', '*.jpeg', '*.jpg', '*.png', '*.tiff', '*.JPG',
         '*.gpg',
         '*.jar',  # Why do we check in jar files?!
         '*.swf', '*.eot',
