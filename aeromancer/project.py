@@ -193,3 +193,17 @@ class ProjectManager(object):
             if name not in seen:
                 self._remove_file_data(obj, reason='file no longer exists')
                 self.session.flush()
+
+    def grep(self, pattern):
+        """Given a pattern, search for lines in files in all projects that match it.
+
+        Returns results of the query, including the four columns line
+        number, line content, filename, and project name.
+
+        """
+        query = self.session.query(
+            Line.number, Line.content, File.name, Project.name,
+        ).join(File, Project).filter(
+            Line.content.op('regexp')(pattern)
+        )
+        return query.yield_per(20).all()
