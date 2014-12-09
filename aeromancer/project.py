@@ -201,9 +201,13 @@ class ProjectManager(object):
         number, line content, filename, and project name.
 
         """
+        # TODO: Would it be more efficient to register the regexp
+        # function on the db session here instead of when we connect?
+        # We could pre-compile the regex and not pass it to each
+        # invocation of the function.
         query = self.session.query(
             Line.number, Line.content, File.name, Project.name,
         ).join(File, Project).filter(
             Line.content.op('regexp')(pattern)
-        )
+        ).order_by(Project.name, File.name, Line.number)
         return query.yield_per(20).all()
