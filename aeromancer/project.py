@@ -194,7 +194,7 @@ class ProjectManager(object):
                 self._remove_file_data(obj, reason='file no longer exists')
                 self.session.flush()
 
-    def grep(self, pattern):
+    def grep(self, pattern, projects=[]):
         """Given a pattern, search for lines in files in all projects that match it.
 
         Returns results of the query, including the four columns line
@@ -209,5 +209,10 @@ class ProjectManager(object):
             Line.number, Line.content, File.name, Project.name,
         ).join(File, Project).filter(
             Line.content.op('regexp')(pattern)
-        ).order_by(Project.name, File.name, Line.number)
+        )
+        if projects:
+            query = query.filter(
+                Project.name.in_(projects)
+            )
+        query = query.order_by(Project.name, File.name, Line.number)
         return query.yield_per(20).all()

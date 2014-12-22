@@ -15,6 +15,13 @@ class Grep(Command):
 
     def get_parser(self, prog_name):
         parser = super(Grep, self).get_parser(prog_name)
+        parser.add_argument(
+            '--project',
+            action='append',
+            default=[],
+            dest='projects',
+            help='projects to limit search',
+        )
         parser.add_argument('pattern',
                             action='store',
                             help='regular expression',
@@ -24,7 +31,7 @@ class Grep(Command):
     def take_action(self, parsed_args):
         session = self.app.get_db_session()
         pm = project.ProjectManager(session)
-        for r in pm.grep(parsed_args.pattern):
+        for r in pm.grep(parsed_args.pattern, parsed_args.projects):
             line_num, content, filename, project_name = r
             print('%s/%s:%s:%s' %
                   (project_name, filename, line_num, content.rstrip())
