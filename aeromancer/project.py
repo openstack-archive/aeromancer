@@ -194,11 +194,11 @@ class ProjectManager(object):
                 self._remove_file_data(obj, reason='file no longer exists')
                 self.session.flush()
 
-    def grep(self, pattern, prj_filter):
-        """Given a pattern, search for lines in files in all projects that match it.
+    def run(self, command, prj_filter):
+        """Given a command, run it for all projects.
 
-        Returns results of the query, including the four columns line
-        number, line content, filename, and project name.
+        Returns sequence of tuples containing project objects, the
+        output, and the errors from the command.
 
         """
         # TODO: Would it be more efficient to register the regexp
@@ -212,13 +212,11 @@ class ProjectManager(object):
         #return query.yield_per(20).all()
         for project in query.all():
             cmd = subprocess.Popen(
-                ['git', 'grep', pattern],
+                command,
                 stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 cwd=project.path,
-                env={'PAGER': ''},
+                env={'PAGER': ''},  # override pager for git commands
             )
             out, err = cmd.communicate()
-            if not out:
-                continue
-            for line in out.decode('utf-8').splitlines():
-                yield project.name + line
+            yield (project, out, err)
