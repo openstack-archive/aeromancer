@@ -10,17 +10,14 @@ from aeromancer.cli.run import ProjectShellCommandBase
 
 
 class Grep(ProjectShellCommandBase):
-    """Search the contents of files"""
+    """Search the contents of files
+
+    Accepts most of the arguments of git-grep, unless they conflict
+    with other arguments to this command.
+
+    """
 
     log = logging.getLogger(__name__)
 
-    def get_parser(self, prog_name):
-        parser = super(Grep, self).get_parser(prog_name)
-        parser.add_argument('pattern',
-                            action='store',
-                            help='regular expression',
-                            )
-        return parser
-
     def _get_command(self, parsed_args):
-        return ['git', 'grep', parsed_args.pattern]
+        return ['git', 'grep'] + self._extra
