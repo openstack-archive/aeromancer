@@ -205,12 +205,20 @@ class ProjectManager(object):
         # function on the db session here instead of when we connect?
         # We could pre-compile the regex and not pass it to each
         # invocation of the function.
-        query = self.session.query(
-            Line.number, Line.content, File.name, Project.name,
-        ).join(File, Project).filter(
-            Line.content.op('regexp')(pattern)
-        )
+        query = self.session.query(Project)
         if prj_filter:
             query = prj_filter.update_query(query)
-        query = query.order_by(Project.name, File.name, Line.number)
-        return query.yield_per(20).all()
+        query = query.order_by(Project.name)
+        #return query.yield_per(20).all()
+        for project in query.all():
+            cmd = subprocess.Popen(
+                ['git', 'grep', pattern],
+                stdout=subprocess.PIPE,
+                cwd=project.path,
+                env={'PAGER': ''},
+            )
+            out, err = cmd.communicate()
+            if not out:
+                continue
+            for line in out.decode('utf-8').splitlines():
+                yield project.name + line

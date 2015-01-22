@@ -27,8 +27,5 @@ class Grep(Command):
         session = self.app.get_db_session()
         pm = project.ProjectManager(session)
         prj_filt = project_filter.ProjectFilter.from_parsed_args(parsed_args)
-        for r in pm.grep(parsed_args.pattern, prj_filt):
-            line_num, content, filename, project_name = r
-            print('%s/%s:%s:%s' %
-                  (project_name, filename, line_num, content.rstrip())
-            )
+        for l in pm.grep(parsed_args.pattern, prj_filt):
+            print(l)
