@@ -19,5 +19,7 @@ class Grep(ProjectShellCommandBase):
 
     log = logging.getLogger(__name__)
 
+    DEFAULT_SEP = '/'
+
     def _get_command(self, parsed_args):
         return ['git', 'grep'] + self._extra
