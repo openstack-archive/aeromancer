@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Code-Review+2: Doug Hellmann <doug@doughellmann.com>
+Workflow+1: Doug Hellmann <doug@doughellmann.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 19 Oct 2015 01:47:10 +0000
+Reviewed-on: https://review.openstack.org/236766
+Project: openstack/aeromancer
+Branch: refs/heads/master
